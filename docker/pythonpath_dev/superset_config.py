@@ -22,9 +22,10 @@
 #
 import logging
 import os
-
+from datetime import timedelta
 from celery.schedules import crontab
 from flask_caching.backends.filesystemcache import FileSystemCache
+from redis import Redis
 
 logger = logging.getLogger()
 
@@ -58,7 +59,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 REDIS_CELERY_DB = os.getenv("REDIS_CELERY_DB", "0")
-REDIS_RESULTS_DB = os.getenv("REDIS_RESULTS_DB", "1")
+REDIS_RESULTS_DB = os.getenv("REDIS_RESULTS_DB", "0")
 
 RESULTS_BACKEND = FileSystemCache("/app/superset_home/sqllab")
 
@@ -70,7 +71,7 @@ CACHE_CONFIG = {
     "CACHE_REDIS_HOST": REDIS_HOST,
     "CACHE_REDIS_PORT": REDIS_PORT,
     "CACHE_REDIS_DB": REDIS_RESULTS_DB,
-    "CACHE_REDIS_PASSWORD": REDIST_PASSWORD,
+    "CACHE_REDIS_PASSWORD": REDIS_PASSWORD,
     # Connection pool settings
     'CACHE_REDIS_CONNECTION_POOL_SIZE': 50,  # Max number of connections
     'CACHE_REDIS_CONNECT_TIMEOUT': 10,       # Connection timeout in seconds
@@ -128,7 +129,7 @@ GLOBAL_ASYNC_QUERIES_REDIS_STREAM_LIMIT = 1000
 GLOBAL_ASYNC_QUERIES_REDIS_STREAM_LIMIT_FIREHOSE = 1000000
 GLOBAL_ASYNC_QUERIES_JWT_COOKIE_NAME = "async-token"
 GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SECURE = True
-GLOBAL_ASYNC_QUERIES_JWT_SECRET = os.getenv("ASYNC_QUERIES_JWT_SECRET")
+GLOBAL_ASYNC_QUERIES_JWT_SECRET = os.getenv("GLOBAL_ASYNC_QUERIES_JWT_SECRET")
 GLOBAL_ASYNC_QUERIES_TRANSPORT = "polling"  # Options: "polling" or "ws"
 GLOBAL_ASYNC_QUERIES_POLLING_DELAY = int(timedelta(milliseconds=500).total_seconds() * 1000)
 
@@ -145,14 +146,14 @@ FEATURE_FLAGS = {
 }
 
 class CeleryConfig:
-    broker_url = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CELERY}"
+    broker_url = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_CELERY_DB}"
     imports = (
         "superset.sql_lab",
         "superset.tasks.scheduler",
         "superset.tasks.thumbnails",
         "superset.tasks.cache",
     )
-    result_backend = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB_CACHE}"
+    result_backend = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_RESULTS_DB}"
 
     # Celery settings
     worker_prefetch_multiplier = 1
